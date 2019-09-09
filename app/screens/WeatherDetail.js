@@ -1,4 +1,4 @@
-import React, { PureComponent, useState, useEffect } from 'react';
+import React, { memo, useState, useEffect } from 'react';
 import { View, Text, Button } from 'react-native';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigation } from 'react-navigation-hooks'
@@ -7,17 +7,24 @@ import {setCityList, setCurrentWeather, setLoading} from '../redux/reducer';
 
 import { URL_SEVERAL_INITIAL, getSearchUrlByLatLon } from '../helper/Constants';
 
-const WeatherDetail = ({navigation}) => {
+import { getOnline,
+         getCurrentLocation, 
+         getCurrentWeather,
+         getCityList,
+         getTimestamp,
+         getLoading} from '../redux/selectors';
+
+const WeatherDetail = memo(({navigation}) => {
   // be careful to never call useNavigation in the press callback. Call hooks directly from the render function!
   const { navigate } = useNavigation();
   // redux
   const dispatch = useDispatch();
-  const cityList = useSelector(state => state.cityList);
-  const online = useSelector(state => state.online);
-  const timestamp = useSelector(state => state.timestamp);
-  const currentLocation = useSelector(state => state.currentLocation);
-  const currentWeather = useSelector(state => state.currentWeather);
-  const loading = useSelector(state => state.loading);
+  const cityList = useSelector(getCityList);
+  const online = useSelector(getOnline);
+  const timestamp = useSelector(getTimestamp);
+  const currentLocation = useSelector(getCurrentLocation);
+  const currentWeather = useSelector(getCurrentWeather);
+  const loading = useSelector(getLoading);
   //react
   useEffect(() => {
     const getWeather = async (url) => {
@@ -80,7 +87,7 @@ const WeatherDetail = ({navigation}) => {
     />
     </View>
   );
-}
+})
 
 WeatherDetail.navigationOptions = ({ navigation }) => ({
   title: navigation.getParam('title', 'DETAILED WEATHER')

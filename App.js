@@ -1,4 +1,4 @@
-import React, { PureComponent, useState, useEffect } from 'react';
+import React, { memo, useState, useEffect } from 'react';
 import { StyleSheet, View, Text, Alert } from 'react-native';
 
 import { Provider, useSelector, useDispatch } from 'react-redux';
@@ -18,6 +18,8 @@ import CityList from './app/screens/CityList';
 import WeatherDetail from './app/screens/WeatherDetail';
 
 import {URL_SEVERAL_INITIAL} from './app/helper/Constants';
+
+import { getCurrentLocation, getUseLocation, getOnline } from './app/redux/selectors';
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////
@@ -70,7 +72,7 @@ const useUserLocation = () => {
   const [location, setLocation] = useState(false);
   const [error, setError] = useState(false);
   const [disabled, setDisabled] = useState(false);
-  const useLocation = useSelector(state => state.useLocation)
+  const useLocation = useSelector(getUseLocation)
   const locationOptions = Platform.OS === 'android' ? null : { enableHighAccuracy: true, timeout: 100000, maximumAge: 1000 };
 
   useEffect(() => {
@@ -113,12 +115,12 @@ const useUserLocation = () => {
 
 
 // App Wrapper to be able to use react-redux with the Main App functional component
-const Wrapper = () => {
+const Wrapper = memo(() => {
   // redux
   const dispatch = useDispatch(); 
-  const online = useSelector(state => state.online);
-  const useLocation = useSelector(state => state.useLocation)
-  const currentLocation = useSelector(state => state.currentLocation)
+  const online = useSelector(getOnline);
+  const useLocation = useSelector(getUseLocation)
+  const currentLocation = useSelector(getCurrentLocation)
   // custom hooks
   const netInfo = useNetInfo();
   const location = useUserLocation();
@@ -146,7 +148,7 @@ const Wrapper = () => {
       <AppContainer/>
     </View>
   );
-}
+})
 
 
 // Main App functional component

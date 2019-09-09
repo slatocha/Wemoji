@@ -25,6 +25,13 @@ import {setCityList, setCurrentWeather} from '../redux/reducer';
 
 import { URL_SEVERAL_INITIAL, getIconUrlForIcon, getSerchUrlForCity } from '../helper/Constants';
 
+import { getOnline,
+         getCurrentLocation, 
+         getCurrentWeather,
+         getCityList,
+         getTimestamp,
+         getLoading} from '../redux/selectors';
+
 /**
   Weather API -> Open Weather Map
 
@@ -305,8 +312,8 @@ const bindAction = (dispatch) => {
 
 const mapStateToProps = state => {
   return Object.assign({}, state, {
-    currentWeather: state.currentWeather,
-    currentLocation: state.currentLocation,
+    currentWeather: getCurrentWeather(state),
+    currentLocation: getCurrentLocation(state),
   });
 }
 
