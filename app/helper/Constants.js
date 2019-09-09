@@ -1,4 +1,4 @@
-export const WEATHER_API_KEY = 'aefbbb5f318df3cb32108331e66575ef';
+export const WEATHER_API_KEY = 'aefbbb5f318df3cb32108331e66575ef'; // please use your own key its free anyway
 export const API_APPENDIX = '&APPID='+WEATHER_API_KEY
 
 export const UNITS = '&units=metric';
