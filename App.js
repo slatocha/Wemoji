@@ -1,23 +1,34 @@
 import React, { PureComponent, useState, useEffect } from 'react';
 import { StyleSheet, View, Text, Alert } from 'react-native';
-import { createStore/*, applyMiddleware*/ } from 'redux';
+
 import { Provider, useSelector, useDispatch } from 'react-redux';
+import { PersistGate } from 'redux-persist/integration/react';
+
 import { createStackNavigator } from 'react-navigation-stack';
 import { createAppContainer } from 'react-navigation';
+
 import Permissions from 'react-native-permissions';
 
 import NetInfo from "@react-native-community/netinfo";
 import Geolocation from '@react-native-community/geolocation';
 
-import reducer, {setOnline, setCurrentLocation, setUseLocation, setError} from './app/redux/reducer';
+import {setOnline, setCurrentLocation, setUseLocation, setError} from './app/redux/reducer';
 
 import CityList from './app/screens/CityList';
 import WeatherDetail from './app/screens/WeatherDetail';
 
 import {URL_SEVERAL_INITIAL} from './app/helper/Constants';
 
-const store = createStore(reducer/*, applyMiddleware()*/);
+///////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////
+// redux && storage
+import { store, persistor } from './app/redux/store';
+///////////////////////////////////////////////////////////////////////////////////////////
 
+
+///////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////
+// screens && navigation
 const Stack = createStackNavigator({
   Home: {
     screen: WeatherDetail
@@ -27,8 +38,11 @@ const Stack = createStackNavigator({
   }
 });
 const AppContainer = createAppContainer(Stack);
+///////////////////////////////////////////////////////////////////////////////////////////
 
 
+///////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////
 // custom react hook to check the network connection that returns only a boolean connection info
 const useNetInfo = () => {
   const [netInfo, setNetInfo] = useState(false)
@@ -46,8 +60,11 @@ const useNetInfo = () => {
   
   return netInfo;
 }
+///////////////////////////////////////////////////////////////////////////////////////////
 
 
+///////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////
 // custom react hook to get the users location if allowed
 const useUserLocation = () => {
   const [location, setLocation] = useState(false);
@@ -92,6 +109,7 @@ const useUserLocation = () => {
   
   return {error:error, data:location, hasError:(error) ? true : false, disabled:disabled};
 }
+///////////////////////////////////////////////////////////////////////////////////////////
 
 
 // App Wrapper to be able to use react-redux with the Main App functional component
@@ -135,7 +153,9 @@ const Wrapper = () => {
 const App = () => {
   return (
     <Provider store={store}>
-      <Wrapper />
+      <PersistGate loading={null} persistor={persistor}>
+        <Wrapper />
+      </PersistGate>
     </Provider>
   );
 }
