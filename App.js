@@ -41,7 +41,7 @@ const Stack = createStackNavigator(
     }
   },
   {
-    // headerMode: 'none',
+    headerMode: 'screen',
     mode: 'card',
     defaultNavigationOptions: {
       gesturesEnabled: false,
