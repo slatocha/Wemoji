@@ -1,11 +1,19 @@
 import React, { memo, useState, useEffect } from 'react';
-import { View, Text, Button } from 'react-native';
+import { View, Text, Button, Share } from 'react-native';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigation } from 'react-navigation-hooks'
+import { Icon } from 'react-native-elements'
 
-import {setCityList, setCurrentWeather, setLoading} from '../redux/reducer';
+import {setCityList, setCurrentWeather, setLoading, setError} from '../redux/reducer';
 
-import { URL_SEVERAL_INITIAL, getSearchUrlByLatLon } from '../helper/Constants';
+import { 
+  API_DEFAULT_UNITS, 
+  getTemperatureUnit,
+  getPressureUnit,
+  getHumidityUnit, 
+  URL_SEVERAL_INITIAL, 
+  getSearchUrlByLatLon, 
+  APP_NAME } from '../helper/Constants';
 
 import { getOnline,
          getCurrentLocation, 
@@ -25,6 +33,34 @@ const WeatherDetail = memo(({navigation}) => {
   const currentLocation = useSelector(getCurrentLocation);
   const currentWeather = useSelector(getCurrentWeather);
   const loading = useSelector(getLoading);
+
+  // basic share functionallity
+  const onShare = async () => {
+    try {
+      let _city = currentWeather && 'name' in currentWeather ? currentWeather.name : 'undefined';
+      let _temp = currentWeather && 'main' in currentWeather && currentWeather.main ? currentWeather.main.temp : 'undefined';
+      
+      const result = await Share.share({
+        title:'Wemoji',
+        message:APP_NAME + ': Current temperature for ' + _city + ' is ' + _temp + ' ' + getTemperatureUnit(API_DEFAULT_UNITS),
+      });
+
+      if (result.action === Share.sharedAction) {
+        if (result.activityType) {
+          // shared with activity type of result.activityType
+        } else {
+          // shared
+          console.log('WeatherDetail::onShare - shared');
+        }
+      } else if (result.action === Share.dismissedAction) {
+        // dismissed
+        console.log('WeatherDetail::onShare - dismissed');
+      }
+    } catch (error) {
+      dispatch(setError(error.message));
+    }
+  };
+  
   //react
   useEffect(() => {
     const getWeather = async (url) => {
@@ -51,7 +87,7 @@ const WeatherDetail = memo(({navigation}) => {
     if (online) {
       if (!loading && currentLocation.lat != 0 && currentLocation.lon != 0 && timestamp == 0) {
         dispatch(setLoading(true));
-        getWeather(getSearchUrlByLatLon(currentLocation.lat,currentLocation.lon));
+        getWeather(getSearchUrlByLatLon(currentLocation.lat,currentLocation.lon,API_DEFAULT_UNITS));
       }
     }
   });
@@ -60,8 +96,9 @@ const WeatherDetail = memo(({navigation}) => {
   // use severa useEffects to get different behaviours
   useEffect(() => {
     // reset the navigation title
-    if (currentWeather && 'name' in currentWeather) navigation.setParams({ title: currentWeather.name });
-      
+    if (currentWeather && 'name' in currentWeather) {
+      navigation.setParams({ title: currentWeather.name, onShare:onShare });
+    }
   },[currentWeather]);
 
   let renderWeather = () => {
@@ -69,9 +106,9 @@ const WeatherDetail = memo(({navigation}) => {
     return(
       loaded  ? <View>
                   <Text>City: {currentWeather.name}</Text>
-                  <Text>Temperature: {currentWeather.main.temp}</Text>
-                  <Text>Humidity: {currentWeather.main.humidity}</Text>
-                  <Text>Pressure: {currentWeather.main.pressure}</Text>
+                  <Text>Temperature: {currentWeather.main.temp} {getTemperatureUnit(API_DEFAULT_UNITS)}</Text>
+                  <Text>Humidity: {currentWeather.main.humidity} {getHumidityUnit()}</Text>
+                  <Text>Pressure: {currentWeather.main.pressure} {getPressureUnit()}</Text>
                 </View>
               : null
     );
@@ -81,16 +118,25 @@ const WeatherDetail = memo(({navigation}) => {
       <Text>Connection: {online ? "online" : "offline"}</Text>
       <Text>Location: {'lat:' + currentLocation.lat + '; lon:' + currentLocation.lon}</Text>
       {renderWeather()}
-      <Button
-      title="Go to CityList"
-      onPress={() => navigate('List')}
-    />
     </View>
   );
 })
 
 WeatherDetail.navigationOptions = ({ navigation }) => ({
-  title: navigation.getParam('title', 'DETAILED WEATHER')
+  title: navigation.getParam('title', APP_NAME),
+  headerLeft: (
+    <Button onPress={() => navigation.navigate('List')} title="Cities"/>
+  ),
+  headerRight: (
+    // <TouchableOpacity onPress={navigation.getParam('onShare', () => {})}>
+    //   <Icon /* raised*/ name='share' type='font-awesome' /*color='#f50'*/ />
+    // </TouchableOpacity>
+    // <Button onPress={navigation.getParam('onShare', () => {})} title="Share" />
+    <Icon /* raised*/ name='share' type='font-awesome' /*color='#f50'*/ onPress={navigation.getParam('onShare', () => {})} />
+  ),
+  headerRightContainerStyle: {
+    paddingRight: 10
+  },
 })
 
 /**

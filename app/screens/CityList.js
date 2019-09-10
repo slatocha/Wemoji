@@ -23,7 +23,7 @@ import { connect } from 'react-redux';
 
 import {setCityList, setCurrentWeather} from '../redux/reducer';
 
-import { URL_SEVERAL_INITIAL, getIconUrlForIcon, getSerchUrlForCity } from '../helper/Constants';
+import { API_DEFAULT_UNITS, getTemperatureUnit, URL_SEVERAL_INITIAL, getIconUrlForIcon, getSerchUrlForCity } from '../helper/Constants';
 
 import { getOnline,
          getCurrentLocation, 
@@ -158,7 +158,7 @@ class CityList extends PureComponent {
   renderItem = ({ item }) => (
     <ListItem
       title={item.name}
-      subtitle={"Temperature: " + item.main.temp.toString() + ' °C'}
+      subtitle={"Temperature: " + item.main.temp.toString() + ' ' + getTemperatureUnit(API_DEFAULT_UNITS)}
       leftAvatar={{
         source: item.weather && Array.isArray(item.weather) && item.weather.length > 0 && { uri: getIconUrlForIcon(item.weather[0].icon) },
         title: item.name
@@ -274,7 +274,7 @@ class CityList extends PureComponent {
         // if not serching {}
         if (!this.state.searching) {
           this.searchAfterTimeout(() => {
-            console.log('fetch something', getSerchUrlForCity(search))
+            console.log('fetch something', getSerchUrlForCity(search, API_DEFAULT_UNITS))
             if (this.state.data && 'list' in this.state.data) {
               let findCityByExpression = '^('+search+').*$';
               let city = this.state.data.list.filter(i => new RegExp(findCityByExpression, 'g').test(i.name));
@@ -283,7 +283,7 @@ class CityList extends PureComponent {
               } 
               else {
                 console.log("The city to search is: ",search, city);
-                this.searchWeather(getSerchUrlForCity(search));
+                this.searchWeather(getSerchUrlForCity(search, API_DEFAULT_UNITS));
               }
             }
           });
