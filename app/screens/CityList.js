@@ -4,13 +4,14 @@ import {
   StyleSheet,
   View,
   Text,
-  StatusBar,
+  // StatusBar,
   FlatList,
   ActivityIndicator,
   Alert,
+  TouchableOpacity
 } from 'react-native';
 
-import { SearchBar, ListItem } from 'react-native-elements';
+import { SearchBar, ListItem, Icon } from 'react-native-elements';
 
 import {
   Header,
@@ -23,7 +24,7 @@ import { connect } from 'react-redux';
 
 import {setCityList, setCurrentWeather} from '../redux/reducer';
 
-import { API_DEFAULT_UNITS, getTemperatureUnit, URL_SEVERAL_INITIAL, getIconUrlForIcon, getSerchUrlForCity } from '../helper/Constants';
+import { APP_NAME, API_DEFAULT_UNITS, getTemperatureUnit, URL_SEVERAL_INITIAL, getIconUrlForIcon, getSerchUrlForCity } from '../helper/Constants';
 
 import { getOnline,
          getCurrentLocation, 
@@ -31,6 +32,13 @@ import { getOnline,
          getCityList,
          getTimestamp,
          getLoading} from '../redux/selectors';
+
+import { COLOR_ERROR_BG,
+         COLOR_ERROR_TINT,
+         COLOR_BG,
+         COLOR_TINT,
+         COLOR_ICON,
+         COLOR_ICON_ERROR } from '../helper/Colors';
 
 /**
   Weather API -> Open Weather Map
@@ -122,6 +130,7 @@ class CityList extends PureComponent {
       data: {cnt:0,list:[]},
       search: '',
       searching: false,
+      online: props.online,
     }
     this.searchTimer;
   }
@@ -137,12 +146,22 @@ class CityList extends PureComponent {
     this.props.navigation.navigate('Home');
   }
 
+  static getDerivedStateFromProps(nextProps, prevState) {
+    // update the online param in navigation to indicate offline state
+    if (prevState.online !== nextProps.online || nextProps.navigation.getParam('online') !== nextProps.online) nextProps.navigation.setParams({ online:nextProps.online });
+    return nextProps.online === prevState.online ? {}
+                                                 : {online:nextProps.online};
+  }
+
   componentWillUnmount() {
     this.clearSearchTimer();
   }
 
   componentDidMount() {
     console.log("CityList::componentDidMount");
+    // set the initial online state
+    this.props.navigation.setParams({ online:this.props.online });
+
     // this.getWeather(URL_SEVERAL_INITIAL);
     let {currentWeather} = this.props;
     if (currentWeather && Object.keys(currentWeather).length > 0) {
@@ -170,12 +189,12 @@ class CityList extends PureComponent {
   )
 
   render() {
-    let {data, search, errorMsg} = this.state;
+    let {data, search, errorMsg, online} = this.state;
     return (
       <Fragment>
-        <StatusBar barStyle="dark-content" />
+        {/* <StatusBar barStyle="dark-content" /> */}
         <SafeAreaView style={styles.safeAreaView}>
-            <View style={styles.body}>
+            <View style={[styles.body, online ? {} : styles.bodyError]}>
               {(data && data.list) ? <FlatList 
                                        ListHeaderComponent={
                                          <SearchBar
@@ -312,10 +331,42 @@ const bindAction = (dispatch) => {
 
 const mapStateToProps = state => {
   return Object.assign({}, state, {
+    online: getOnline(state),
     currentWeather: getCurrentWeather(state),
     currentLocation: getCurrentLocation(state),
   });
 }
+
+CityList.navigationOptions = ({ navigation }) => ({
+  headerRight: (
+    navigation.getParam('online', true) ? null
+                                        : <TouchableOpacity 
+                                            onPress={() => { Alert.alert(
+                                                                'Offline',
+                                                                APP_NAME + ' is offline, please check your internet connection.',
+                                                                [ 
+                                                                  // {text: 'Go to settings', onPress: () => Permissions.openSettings()},
+                                                                  {text: 'Ok', onPress: () => {} ,style: 'cancel'},
+                                                                ],
+                                                                {cancelable: false}
+                                                            )}}>
+                                            <Icon 
+                                              name='exclamation-triangle' 
+                                              type='font-awesome' 
+                                              color={navigation.getParam('online', true) ? COLOR_ICON : COLOR_ICON_ERROR} 
+                                              />
+                                         </TouchableOpacity>
+  ),
+  headerTintColor: navigation.getParam('online', true) ? COLOR_TINT : COLOR_ERROR_TINT,
+  headerStyle:{
+    backgroundColor: navigation.getParam('online', true) ? COLOR_BG : COLOR_ERROR_BG,
+    shadowColor: 'transparent',
+    borderBottomWidth: 0,
+  },
+  headerRightContainerStyle: {
+    paddingRight: 10
+  },
+})
 
 export default connect(mapStateToProps, bindAction)(CityList);
 
@@ -323,16 +374,13 @@ const styles = StyleSheet.create({
   safeAreaView: {
     flex:1,
   },
-  scrollView: {
-    backgroundColor: Colors.lighter,
-  },
-  engine: {
-    position: 'absolute',
-    right: 0,
-  },
   body: {
     flex:1,
-    backgroundColor: Colors.white,
+    backgroundColor: COLOR_BG,
+  },
+  bodyError: {
+    color:COLOR_ERROR_TINT,
+    backgroundColor: COLOR_ERROR_BG,
   },
   sectionContainer: {
     marginTop: 24,

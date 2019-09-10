@@ -1,8 +1,9 @@
 import React, { memo, useState, useEffect } from 'react';
-import { View, Text, Button, Share } from 'react-native';
+import { SafeAreaView, StyleSheet, View, Text, Button, Share, TouchableOpacity, Alert } from 'react-native';
 import { useSelector, useDispatch } from 'react-redux';
-import { useNavigation } from 'react-navigation-hooks'
-import { Icon } from 'react-native-elements'
+import { useNavigation } from 'react-navigation-hooks';
+import { Icon } from 'react-native-elements';
+import Permissions from 'react-native-permissions';
 
 import {setCityList, setCurrentWeather, setLoading, setError} from '../redux/reducer';
 
@@ -21,6 +22,13 @@ import { getOnline,
          getCityList,
          getTimestamp,
          getLoading} from '../redux/selectors';
+
+import { COLOR_ERROR_BG,
+         COLOR_ERROR_TINT,
+         COLOR_BG,
+         COLOR_TINT,
+         COLOR_ICON,
+         COLOR_ICON_ERROR } from '../helper/Colors';
 
 const WeatherDetail = memo(({navigation}) => {
   // be careful to never call useNavigation in the press callback. Call hooks directly from the render function!
@@ -61,7 +69,12 @@ const WeatherDetail = memo(({navigation}) => {
     }
   };
   
-  //react
+  // react
+  // set an array of vars or nothing to listen to on mount and update example => useEffect(() => {...},[currentLocation,timestamp]);
+  // set an empty array to only use the effect on Mount
+  // use several useEffects to get different behaviours
+
+  // weather effect
   useEffect(() => {
     const getWeather = async (url) => {
       try {
@@ -91,15 +104,20 @@ const WeatherDetail = memo(({navigation}) => {
       }
     }
   });
-  // set an array of vars or nothing to listen to on mount and update example => },[currentLocation,timestamp]);
-  // set an empty array to only use the effect on Mount
-  // use severa useEffects to get different behaviours
+
+  // header nameing and share effect
   useEffect(() => {
     // reset the navigation title
     if (currentWeather && 'name' in currentWeather) {
       navigation.setParams({ title: currentWeather.name, onShare:onShare });
     }
   },[currentWeather]);
+
+  // online change effect
+  useEffect(() => {
+    // reset the navigation title
+    navigation.setParams({ online:online });
+  },[online]);
 
   let renderWeather = () => {
     let loaded = currentWeather && Object.keys(currentWeather).length > 0 && 'name' in currentWeather && 'main' in currentWeather;
@@ -114,30 +132,76 @@ const WeatherDetail = memo(({navigation}) => {
     );
   }
   return (
-    <View>
-      <Text>Connection: {online ? "online" : "offline"}</Text>
-      <Text>Location: {'lat:' + currentLocation.lat + '; lon:' + currentLocation.lon}</Text>
-      {renderWeather()}
-    </View>
+    <SafeAreaView style={styles.safeAreaView}>
+      <View style={[styles.body, online ? {} : styles.bodyError]}>
+        <Text>Connection: {online ? "online" : "offline"}</Text>
+        <Text>Location: {'lat:' + currentLocation.lat + '; lon:' + currentLocation.lon}</Text>
+        {renderWeather()}
+      </View>
+    </SafeAreaView>
   );
 })
 
 WeatherDetail.navigationOptions = ({ navigation }) => ({
   title: navigation.getParam('title', APP_NAME),
   headerLeft: (
-    <Button onPress={() => navigation.navigate('List')} title="Cities"/>
+    <TouchableOpacity onPress={() => navigation.navigate('List')}>
+      <Icon /* raised*/ name='bars' type='font-awesome' color={navigation.getParam('online', true) ? COLOR_ICON : COLOR_ICON_ERROR} />
+    </TouchableOpacity>
+    // <Icon name='globe' type='font-awesome' /*color='#f50'*/ onPress={() => navigation.navigate('List')} />
+    // <Button onPress={() => navigation.navigate('List')} title="Cities"/>
   ),
   headerRight: (
-    // <TouchableOpacity onPress={navigation.getParam('onShare', () => {})}>
-    //   <Icon /* raised*/ name='share' type='font-awesome' /*color='#f50'*/ />
-    // </TouchableOpacity>
+    navigation.getParam('online', true) ? <TouchableOpacity onPress={navigation.getParam('onShare', () => {})}>
+                                            <Icon /* raised*/ name='share' type='font-awesome' color={navigation.getParam('online', true) ? COLOR_ICON : COLOR_ICON_ERROR} />
+                                          </TouchableOpacity>
+                                        : <TouchableOpacity 
+                                            onPress={() => { Alert.alert(
+                                                                'Offline',
+                                                                APP_NAME + ' is offline, please check your internet connection.',
+                                                                [ 
+                                                                  // {text: 'Go to settings', onPress: () => Permissions.openSettings()},
+                                                                  {text: 'Ok', onPress: () => {} ,style: 'cancel'},
+                                                                ],
+                                                                {cancelable: false}
+                                                            )}}>
+                                            <Icon 
+                                              name='exclamation-triangle' 
+                                              type='font-awesome' 
+                                              color={navigation.getParam('online', true) ? COLOR_ICON : COLOR_ICON_ERROR} 
+                                              />
+                                         </TouchableOpacity>
     // <Button onPress={navigation.getParam('onShare', () => {})} title="Share" />
-    <Icon /* raised*/ name='share' type='font-awesome' /*color='#f50'*/ onPress={navigation.getParam('onShare', () => {})} />
+    // <Icon /* raised*/ name='share' type='font-awesome' /*color='#f50'*/ onPress={navigation.getParam('onShare', () => {})} />
   ),
+  headerTintColor: navigation.getParam('online', true) ? COLOR_TINT : COLOR_ERROR_TINT,
+  headerStyle:{
+    backgroundColor: navigation.getParam('online', true) ? COLOR_BG : COLOR_ERROR_BG,
+    borderColor: navigation.getParam('online', true) ? COLOR_BG : COLOR_ERROR_BG,
+    shadowColor: 'transparent',
+    borderBottomWidth: 0,
+  },
+  headerLeftContainerStyle: {
+    paddingLeft: 10
+  },
   headerRightContainerStyle: {
     paddingRight: 10
   },
 })
+
+const styles = StyleSheet.create({
+  safeAreaView: {
+    flex:1,
+  },
+  body: {
+    flex:1,
+    backgroundColor: COLOR_BG,
+  },
+  bodyError: {
+    color:COLOR_ERROR_TINT,
+    backgroundColor: COLOR_ERROR_BG,
+  },
+});
 
 /**
   example options
