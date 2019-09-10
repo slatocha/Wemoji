@@ -69,7 +69,7 @@ const WeatherDetail = memo(({navigation}) => {
     }
   };
   
-  // react
+  // react - useEffect
   // set an array of vars or nothing to listen to on mount and update example => useEffect(() => {...},[currentLocation,timestamp]);
   // set an empty array to only use the effect on Mount
   // use several useEffects to get different behaviours

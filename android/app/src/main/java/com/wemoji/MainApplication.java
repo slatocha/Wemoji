@@ -33,6 +33,11 @@ public class MainApplication extends Application implements ReactApplication {
       List<ReactPackage> packages = new PackageList(this).getPackages();
       // Packages that cannot be autolinked yet can be added manually here, for example:
       // packages.add(new MyReactNativePackage());
+      
+      // @dev: sebastiankamill@googlemail.com
+      // unneded to add SplashScreen, because this should be already autoliked
+      // packages.add(new SplashScreenReactPackage());
+
       return packages;
     }
 

@@ -12,6 +12,8 @@ import Permissions from 'react-native-permissions';
 import NetInfo from "@react-native-community/netinfo";
 import Geolocation from '@react-native-community/geolocation';
 
+import SplashScreen from 'react-native-splash-screen';
+
 import {setOnline, setCurrentLocation, setUseLocation, setError} from './app/redux/reducer';
 
 import CityList from './app/screens/CityList';
@@ -157,7 +159,17 @@ const Wrapper = memo(() => {
   // custom hooks
   const netInfo = useNetInfo();
   const location = useUserLocation();
-  // react
+
+  // react - useEffect
+  // set an array of vars or nothing to listen to on mount and update example => useEffect(() => {},[useLocation,location]);
+  // set an empty array to only use the effect on Mount
+  // use severa useEffects to get different behaviours
+
+  // fire SplashScreen hide only once on component did mount
+  useEffect(() => {
+    SplashScreen.hide();
+  },[]);
+
   useEffect(() => {
     // network handling
     if (online != netInfo) dispatch(setOnline(netInfo));
@@ -172,9 +184,6 @@ const Wrapper = memo(() => {
       }
     }
   });
-  // set an array of vars or nothing to listen to on mount and update example => },[useLocation,location]);
-  // set an empty array to only use the effect on Mount
-  // use severa useEffects to get different behaviours
 
   return(
     <View style={styles.container}>
