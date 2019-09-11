@@ -44,4 +44,10 @@ export const getSerchUrlForCity = (search, units) => { return BASE_URL + '/weath
 
 export const getSearchUrlByLatLon = (lat,lon, units) => { return BASE_URL + '/weather?lat=' + lat + '&lon=' + lon + (units ? setWeatherAPIUnits(units) : setWeatherAPIUnits()) + API_APPENDIX }
 
+export const getSerchForcastUrlForCity = (search, units) => { return BASE_URL + '/forcast?q=' + search + (units ? setWeatherAPIUnits(units) : setWeatherAPIUnits()) + API_APPENDIX }
+
+export const getSerchForcastUrlForCityId = (cityId, units) => { return BASE_URL + '/forcast?id=' + cityId + (units ? setWeatherAPIUnits(units) : setWeatherAPIUnits()) + API_APPENDIX }
+
+export const getSearchForcastUrlByLatLon = (lat,lon, units) => { return BASE_URL + '/forcast?lat=' + lat + '&lon=' + lon + (units ? setWeatherAPIUnits(units) : setWeatherAPIUnits()) + API_APPENDIX }
+
 export const getIconUrlForIcon = icon => { return 'http://openweathermap.org/img/wn/' + icon + '@2x.png' }
