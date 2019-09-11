@@ -39,7 +39,8 @@ import { COLOR_ERROR_BG,
          COLOR_TINT,
          COLOR_ICON,
          COLOR_ICON_ERROR,
-         COLOR_WHITE } from '../helper/Colors';
+         COLOR_WHITE,
+         COLOR_DARK_PASTEL_BLUE } from '../helper/Colors';
 
 import { ERROR_OFFLINE, ERROR_WEATHER_API, ERROR_CITY_SEARCH, ERROR_CITY_NOT_FOUND } from '../helper/Error';
 
@@ -165,7 +166,9 @@ class CityList extends PureComponent {
     <ListItem
       containerStyle={styles.listItem}
       title={item.name}
+      titleStyle={styles.listItemColor}
       subtitle={"Temperature: " + item.main.temp.toString() + ' ' + getTemperatureUnit(API_DEFAULT_UNITS)}
+      subtitleStyle={styles.listItemColor}
       leftAvatar={{
         source: item.weather && Array.isArray(item.weather) && item.weather.length > 0 && { uri: getIconUrlForIcon(item.weather[0].icon) },
         title: item.name
@@ -193,10 +196,16 @@ class CityList extends PureComponent {
                 onChangeText={this.updateSearch}
                 showLoading={search != ''}
                 value={search}
+                containerStyle={{
+                  backgroundColor:COLOR_DARK_PASTEL_BLUE,
+                  borderBottomColor: 'transparent',
+                  borderTopColor: 'transparent'}}
+                inputContainerStyle={{backgroundColor:COLOR_TINT}}
               />
               <ListItem
                 containerStyle={styles.listItem}
                 title={'Current Location'}
+                titleStyle={styles.listItemColor}
                 onPress={() => {}}
                 bottomDivider
                 switch={{onValueChange:val => {console.log("change",val), this.props.setUseLocation(val); if (!val) this.props.setCurrentLocationWeather({data:{}, timestamp:0});}, value:useLocation}}
@@ -206,6 +215,7 @@ class CityList extends PureComponent {
                                       currentLocationWeather && Object.keys(currentLocationWeather).length > 0 ? <ListItem
                                                                                                                     containerStyle={styles.listItem}
                                                                                                                     title={currentLocationWeather.name}
+                                                                                                                    titleStyle={styles.listItemColor}
                                                                                                                     subtitle={
                                                                                                                       <View style={styles.subtitleView}>
                                                                                                                         <Icon name='location-arrow' type='font-awesome' color={COLOR_ICON} size={20}/>
@@ -392,10 +402,14 @@ const styles = StyleSheet.create({
   },
   subtitleText: {
     paddingLeft: 5,
-    fontSize:15
+    fontSize:15,
+    color:COLOR_TINT
+  },
+  listItemColor: {
+    color:COLOR_TINT
   },
   footerText: {
-    color:"#bdbdbd",
+    color:COLOR_TINT,
     fontSize: 15,
     fontWeight: '600',
     textAlign: 'center',
