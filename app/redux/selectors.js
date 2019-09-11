@@ -4,6 +4,7 @@ import { createSelector } from 'reselect';
 export const getOnline = createSelector(state => state.online, online => online);
 export const getUseLocation = createSelector(state => state.useLocation, useLocation => useLocation);
 export const getCityList = createSelector(state => state.cityList, cityList => cityList);
+export const getCityListTimestamp = createSelector(state => state.cityList, cityList => cityList.timestamp);
 export const getSelectedCity = createSelector(state => state.selectedCity, selectedCity => selectedCity);
 export const getCurrentWeather = createSelector(state => state.currentWeather, currentWeather => currentWeather);
 export const getCurrentLocationWeather = createSelector(state => state.currentLocationWeather, currentLocationWeather => currentLocationWeather);

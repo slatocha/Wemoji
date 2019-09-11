@@ -2,7 +2,7 @@ import React, { memo, useState, useEffect } from 'react';
 import { SafeAreaView, StyleSheet, View, Text, Button, Share, TouchableOpacity } from 'react-native';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigation } from 'react-navigation-hooks';
-import { Icon } from 'react-native-elements';
+import { Icon, Image, ActivityIndicator } from 'react-native-elements';
 import Permissions from 'react-native-permissions';
 
 import AsyncStorage from "@react-native-community/async-storage";
@@ -16,6 +16,7 @@ import {
   getHumidityUnit, 
   URL_SEVERAL_INITIAL, 
   getSearchUrlByLatLon, 
+  getIconUrlForIcon,
   APP_NAME } from '../helper/Constants';
 
 import { getOnline,
@@ -24,14 +25,16 @@ import { getOnline,
          getCurrentLocationWeather,
          getTimestamp,
          getLoading,
-         getUseLocation} from '../redux/selectors';
+         getUseLocation,
+         getCityListTimestamp} from '../redux/selectors';
 
 import { COLOR_ERROR_BG,
          COLOR_ERROR_TINT,
          COLOR_BG,
          COLOR_TINT,
          COLOR_ICON,
-         COLOR_ICON_ERROR } from '../helper/Colors';
+         COLOR_ICON_ERROR,
+         COLOR_WILD_BLUE_YONDER } from '../helper/Colors';
 
 import { ERROR_OFFLINE, ERROR_WEATHER_API, ERROR_SHARE } from '../helper/Error';
 
@@ -42,6 +45,7 @@ const WeatherDetail = memo(({navigation}) => {
   const dispatch = useDispatch();
   const online = useSelector(getOnline);
   const timestamp = useSelector(getTimestamp);
+  const timestampCityList = useSelector(getCityListTimestamp);
   const currentLocation = useSelector(getCurrentLocation);
   const currentLocationWeather = useSelector(getCurrentLocationWeather);
   const currentWeather = useSelector(getCurrentWeather);
@@ -139,12 +143,21 @@ const WeatherDetail = memo(({navigation}) => {
 
   let renderWeather = () => {
     let loaded = currentWeather && Object.keys(currentWeather).length > 0 && 'name' in currentWeather && 'main' in currentWeather;
+    let _date = new Date(timestampCityList);
     return(
-      loaded  ? <View>
-                  <Text>City: {currentWeather.name}</Text>
-                  <Text>Temperature: {currentWeather.main.temp} {getTemperatureUnit(API_DEFAULT_UNITS)}</Text>
-                  <Text>Humidity: {currentWeather.main.humidity} {getHumidityUnit()}</Text>
-                  <Text>Pressure: {currentWeather.main.pressure} {getPressureUnit()}</Text>
+      loaded  ? <View style={[styles.detailView, online ? {} : styles.bodyError]}>
+                  <Text style={styles.detailTime}>{timestampCityList ? (/*_date.toLocaleDateString("hr-HR") + ' - ' + */_date.getHours() + ':' + _date.getMinutes()) : ""}</Text>
+                  <Image
+                    source={currentWeather.weather && Array.isArray(currentWeather.weather) && currentWeather.weather.length > 0 && { uri: getIconUrlForIcon(currentWeather.weather[0].icon) }}
+                    style={{ width: 250, height: 250 }}
+                    containerStyle={styles.image}
+                    // PlaceholderContent={<ActivityIndicator />}
+                  />
+                  <Text style={styles.detailTepmerature}>{!isNaN(currentWeather.main.temp) ? parseInt(currentWeather.main.temp) : currentWeather.main.temp} {getTemperatureUnit(API_DEFAULT_UNITS)}</Text>
+                  <View style={styles.weatherAdditional}>
+                    <Text style={styles.detailHumidity}>{currentWeather.main.humidity} {getHumidityUnit()}</Text>
+                    <Text style={styles.detailPressure}>{currentWeather.main.pressure} {getPressureUnit()}</Text>
+                  </View>
                 </View>
               : null
     );
@@ -152,13 +165,22 @@ const WeatherDetail = memo(({navigation}) => {
 
   let renderLocationWeather = () => {
     let loaded = currentLocationWeather && Object.keys(currentLocationWeather).length > 0 && 'name' in currentLocationWeather && 'main' in currentLocationWeather;
+
+    let _date = new Date(timestamp);
     return(
-      loaded  ? <View>
-                  <Text>City: {currentLocationWeather.name}</Text>
-                  <Text>Temperature: {currentLocationWeather.main.temp} {getTemperatureUnit(API_DEFAULT_UNITS)}</Text>
-                  <Text>Humidity: {currentLocationWeather.main.humidity} {getHumidityUnit()}</Text>
-                  <Text>Pressure: {currentLocationWeather.main.pressure} {getPressureUnit()}</Text>
-                  <Text>from current Loc</Text>
+      loaded  ? <View style={[styles.detailView, online ? {} : styles.bodyError]}>
+                  <Text style={styles.detailTime}>{timestamp ? (/*_date.toLocaleDateString("hr-HR") + ' - ' + */_date.getHours() + ':' + _date.getMinutes()) : ""}</Text>
+                  <Image
+                    source={currentLocationWeather.weather && Array.isArray(currentLocationWeather.weather) && currentLocationWeather.weather.length > 0 && { uri: getIconUrlForIcon(currentLocationWeather.weather[0].icon) }}
+                    style={{ width: 250, height: 250 }}
+                    containerStyle={styles.image}
+                    // PlaceholderContent={<ActivityIndicator />}
+                  />
+                  <Text style={styles.detailTepmerature}>{!isNaN(currentLocationWeather.main.temp) ? parseInt(currentLocationWeather.main.temp) : currentLocationWeather.main.temp} {getTemperatureUnit(API_DEFAULT_UNITS)}</Text>
+                  <View style={styles.weatherAdditional}>
+                    <Text style={styles.detailHumidity}>{currentLocationWeather.main.humidity} {getHumidityUnit()}</Text>
+                    <Text style={styles.detailPressure}>{currentLocationWeather.main.pressure} {getPressureUnit()}</Text>
+                  </View>
                 </View>
               : null
     );
@@ -222,6 +244,54 @@ const styles = StyleSheet.create({
     color:COLOR_ERROR_TINT,
     backgroundColor: COLOR_ERROR_BG,
   },
+  detailView: {
+    flex:1,
+    justifyContent: 'space-between',
+    alignItems: 'center'
+  },
+  image: {
+  },
+  weatherAdditional: {
+    justifyContent: 'space-between',
+    flexDirection: 'row',
+  },
+  detailTime: {
+    color:COLOR_TINT,
+    fontSize: 50,
+    fontWeight: '400',
+    textAlign: 'center',
+    paddingTop:20,
+    paddingHorizontal: 24,
+  },
+  detailTepmerature: {
+    color:COLOR_TINT,
+    fontSize: 80,
+    fontWeight: '600',
+    textAlign: 'center',
+    paddingTop:20,
+    paddingHorizontal: 30,
+    marginBottom:25,
+  },
+  detailHumidity: {
+    color:COLOR_TINT,
+    fontSize: 25,
+    fontWeight: '600',
+    textAlign: 'left',
+    // paddingTop:20,
+    paddingHorizontal: 30,
+    flexDirection: 'row',
+    marginBottom:25,
+  },
+  detailPressure: {
+    color:COLOR_TINT,
+    fontSize: 25,
+    fontWeight: '600',
+    textAlign: 'right',
+    // paddingTop:20,
+    paddingHorizontal: 30,
+    flexDirection: 'row',
+    marginBottom:25,
+  }
 });
 
 /**
