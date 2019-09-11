@@ -168,8 +168,8 @@ const WeatherDetail = memo(({navigation}) => {
   return (
     <SafeAreaView style={styles.safeAreaView}>
       <View style={[styles.body, online ? {} : styles.bodyError]}>
-        <Text>Connection: {online ? "online" : "offline"}</Text>
-        <Text>Location: {'lat:' + currentLocation.lat + '; lon:' + currentLocation.lon}</Text>
+        {/* <Text>Connection: {online ? "online" : "offline"}</Text>
+        <Text>Location: {'lat:' + currentLocation.lat + '; lon:' + currentLocation.lon}</Text> */}
         {useLocation ? renderLocationWeather() : renderWeather()}
       </View>
     </SafeAreaView>

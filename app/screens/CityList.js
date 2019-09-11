@@ -126,6 +126,9 @@ class CityList extends PureComponent {
   handleDetail(item) {
     // console.log("CityList::handleDetail",item);
     this.props.setCurrentWeather({data:item, timestamp:new Date().getTime()});
+    // reset the use location
+    this.props.setUseLocation(false);
+    this.props.setCurrentLocationWeather({data:{}, timestamp:0});
     this.props.navigation.navigate('Home');
   }
 
