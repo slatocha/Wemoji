@@ -40,7 +40,8 @@ import { COLOR_ERROR_BG,
          COLOR_ICON,
          COLOR_ICON_ERROR,
          COLOR_WHITE,
-         COLOR_DARK_PASTEL_BLUE } from '../helper/Colors';
+         COLOR_DARK_PASTEL_BLUE,
+         COLOR_LIGHT_RED } from '../helper/Colors';
 
 import { ERROR_OFFLINE, ERROR_WEATHER_API, ERROR_CITY_SEARCH, ERROR_CITY_NOT_FOUND } from '../helper/Error';
 
@@ -164,7 +165,7 @@ class CityList extends PureComponent {
 
   renderItem = ({ item }) => (
     <ListItem
-      containerStyle={styles.listItem}
+      containerStyle={this.props.online ? styles.listItem : styles.listItemError}
       title={item.name}
       titleStyle={styles.listItemColor}
       subtitle={"Temperature: " + item.main.temp.toString() + ' ' + getTemperatureUnit(API_DEFAULT_UNITS)}
@@ -196,14 +197,11 @@ class CityList extends PureComponent {
                 onChangeText={this.updateSearch}
                 showLoading={search != ''}
                 value={search}
-                containerStyle={{
-                  backgroundColor:COLOR_DARK_PASTEL_BLUE,
-                  borderBottomColor: 'transparent',
-                  borderTopColor: 'transparent'}}
-                inputContainerStyle={{backgroundColor:COLOR_TINT}}
+                containerStyle={!online ? styles.searchContainerStyleError : styles.searchContainerStyle}
+                inputContainerStyle={!online ? styles.searchInputContainerStyleError : styles.searchInputContainerStyle}
               />
               <ListItem
-                containerStyle={styles.listItem}
+                containerStyle={online ? styles.listItem : styles.listItemError}
                 title={'Current Location'}
                 titleStyle={styles.listItemColor}
                 onPress={() => {}}
@@ -213,7 +211,7 @@ class CityList extends PureComponent {
               {(list.length > 0) ? <FlatList 
                                     ListHeaderComponent={
                                       currentLocationWeather && Object.keys(currentLocationWeather).length > 0 ? <ListItem
-                                                                                                                    containerStyle={styles.listItem}
+                                                                                                                    containerStyle={online ? styles.listItem : styles.listItemError}
                                                                                                                     title={currentLocationWeather.name}
                                                                                                                     titleStyle={styles.listItemColor}
                                                                                                                     subtitle={
@@ -397,6 +395,9 @@ const styles = StyleSheet.create({
   listItem: {
     backgroundColor:COLOR_BG,
   },
+  listItemError: {
+    backgroundColor:COLOR_ERROR_BG,
+  },
   subtitleView: {
     flexDirection: 'row',
   },
@@ -416,4 +417,20 @@ const styles = StyleSheet.create({
     paddingTop:20,
     paddingHorizontal: 24,
   },
+  searchContainerStyle:{
+    backgroundColor:COLOR_DARK_PASTEL_BLUE,
+    borderBottomColor: 'transparent',
+    borderTopColor: 'transparent'
+  },
+  searchInputContainerStyle: {
+    backgroundColor:COLOR_TINT
+  },
+  searchContainerStyleError:{
+    backgroundColor: COLOR_ERROR_BG,
+    borderBottomColor: 'transparent',
+    borderTopColor: 'transparent'
+  },
+  searchInputContainerStyleError: {
+    backgroundColor:COLOR_LIGHT_RED
+  }
 });
