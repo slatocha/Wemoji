@@ -1,8 +1,9 @@
 
 import AsyncStorage from "@react-native-community/async-storage";
 
-import { createStore, applyMiddleware } from 'redux';
+import { createStore/*, applyMiddleware*/ } from 'redux';
 import { persistStore, persistReducer } from 'redux-persist';
+import autoMergeLevel2 from 'redux-persist/lib/stateReconciler/autoMergeLevel2';
 
 // import thunk from 'redux-thunk';
 
@@ -15,12 +16,14 @@ import reducer from './reducer';
 ///////////////////////////////////////////////////////////////////////////////////////////
 // Middleware: Redux Persist Config
 const persistConfig = {
+  timeout: null,
   key: 'root',
   storage: AsyncStorage,
+  stateReconciler: autoMergeLevel2,
   // Whitelist (Save Specific Reducers)
-  whitelist: [
-    'reducer',
-  ],
+  // whitelist: [
+  //   'reducer',
+  // ],
   // Blacklist (Don't Save Specific Reducers) // when optimizing the app
   // blacklist: [
   //   'otherReducer',
@@ -28,10 +31,11 @@ const persistConfig = {
 };
 const persistedReducer = persistReducer(persistConfig, reducer);// rootReducer);
 
-const store = createStore(
-  persistedReducer,
-  // applyMiddleware(thunk),
-);
-let persistor = persistStore(store);
 
-export { store, persistor };
+export const store = createStore(
+    persistedReducer,
+    // applyMiddleware(thunk),
+  );
+export const persistor = persistStore(store, null, () => {
+    console.log("rehydrated redux store:",store.getState())
+});

@@ -22,16 +22,15 @@ import {
 
 import { connect } from 'react-redux';
 
-import {setCityList, setCurrentWeather} from '../redux/reducer';
-
 import { APP_NAME, API_DEFAULT_UNITS, getTemperatureUnit, URL_SEVERAL_INITIAL, getIconUrlForIcon, getSerchUrlForCity } from '../helper/Constants';
 
 import { getOnline,
          getCurrentLocation, 
          getCurrentWeather,
          getCityList,
-         getTimestamp,
-         getLoading} from '../redux/selectors';
+         getTimestamp } from '../redux/selectors';
+
+import {setCurrentWeather, setCityList, updateCityList, setError} from '../redux/reducer';
 
 import { COLOR_ERROR_BG,
          COLOR_ERROR_TINT,
@@ -39,6 +38,8 @@ import { COLOR_ERROR_BG,
          COLOR_TINT,
          COLOR_ICON,
          COLOR_ICON_ERROR } from '../helper/Colors';
+
+const SEARCH_AFTER_PASSED_MS = 2000;
 
 /**
   Weather API -> Open Weather Map
@@ -99,35 +100,12 @@ import { COLOR_ERROR_BG,
 
  */
 
-// // here we tell the engine we're working async
-// async function getWeather (url) {
-//    try {
-//      console.log("the url: ", url)
-// // here we tell the engine to PAUSE EXECUTION and wait for a response
-// // once it has a reponse, assign it to the variable 'resp' and continue
-//      const resp = await fetch(url)
-
-// // this code will NOT run until 'resp' has been assigned
-// // and then the program will PAUSE until it gets a reponse
-//      const data = await resp.json()
-//     console.log("the response: ", resp)
-//     console.log("the data:", data)
-// // this code only runs when data is assigned.
-//      return data
-//   // if the data exceeds the limit
-  
-//   } catch (err) {
-//     console.log('the error:',err)
-//   }
-// }
-
 
 class CityList extends PureComponent {
 
   constructor(props) {
     super(props);
     this.state = {
-      data: {cnt:0,list:[]},
       search: '',
       searching: false,
       online: props.online,
@@ -141,8 +119,8 @@ class CityList extends PureComponent {
   }
 
   handleDetail(item) {
-    console.log("CityList::handleDetail",item);
-    this.props.setCurrentWeather({data:item});
+    // console.log("CityList::handleDetail",item);
+    this.props.setCurrentWeather({data:item, timestamp:new Date().getTime()});
     this.props.navigation.navigate('Home');
   }
 
@@ -159,17 +137,12 @@ class CityList extends PureComponent {
 
   componentDidMount() {
     console.log("CityList::componentDidMount");
+    let {online, cityList} = this.props;
     // set the initial online state
-    this.props.navigation.setParams({ online:this.props.online });
+    this.props.navigation.setParams({ online:online });
 
-    // this.getWeather(URL_SEVERAL_INITIAL);
-    let {currentWeather} = this.props;
-    if (currentWeather && Object.keys(currentWeather).length > 0) {
-      let _list = this.state.data.list;
-      _list.push(currentWeather)
-      // save data to the state
-      this.setState({data:{list:_list, cnt:this.state.data.cnt+1}, searching:false, search:''});
-    }
+    // get the weather initially, but only if the timestamp was never set or is older than needed
+    if (cityList.timestamp == 0 && online) this.getWeather(URL_SEVERAL_INITIAL);
   }
 
   keyExtractor = (item, index) => index.toString();
@@ -189,24 +162,28 @@ class CityList extends PureComponent {
   )
 
   render() {
-    let {data, search, errorMsg, online} = this.state;
+    let {search, errorMsg} = this.state;
+    let { cityList: { list },
+          online } = this.props;
+
     return (
       <Fragment>
         {/* <StatusBar barStyle="dark-content" /> */}
         <SafeAreaView style={styles.safeAreaView}>
             <View style={[styles.body, online ? {} : styles.bodyError]}>
-              {(data && data.list) ? <FlatList 
-                                       ListHeaderComponent={
-                                         <SearchBar
-                                          placeholder="City..."
-                                          onChangeText={this.updateSearch}
-                                          showLoading={search != ''}
-                                          value={search}
-                                        />
-                                       }
-                                       keyExtractor = {this.keyExtractor}
-                                       data={data.list} 
-                                       renderItem={this.renderItem} /> : <ActivityIndicator size="large" color="#0000ff" />}
+              {(list.length > 0) ? <FlatList 
+                                    ListHeaderComponent={
+                                      <SearchBar
+                                      placeholder="City..."
+                                      onChangeText={this.updateSearch}
+                                      showLoading={search != ''}
+                                      value={search}
+                                    />
+                                    }
+                                    keyExtractor = {this.keyExtractor}
+                                    data={list} 
+                                    renderItem={this.renderItem} /> 
+                                  : <ActivityIndicator size="large" color="#0000ff" />}
             </View>
         </SafeAreaView>
       </Fragment>
@@ -230,7 +207,8 @@ class CityList extends PureComponent {
       console.log("the data:", data)
       
       // return data
-      this.setState({data:data, searching:false, search:''});
+      this.props.setCityList({data:data, timestamp:new Date().getTime()});
+      this.setState({searching:false, search:''});
     } catch (err) {
       console.log('the error:',err)
     }
@@ -250,10 +228,8 @@ class CityList extends PureComponent {
       // save successful data
       if ('status' in resp && resp.status) {
         if (resp.status === 200) {
-          let _list = this.state.data.list;
-          _list.push(data)
-          // save data to the state
-          this.setState({data:{list:_list, cnt:this.state.data.cnt+1}, searching:false, search:''});
+          this.props.updateCityList({data:data, timestamp:new Date().getTime()})
+          this.setState({searching:false, search:''});
         }
         else if (resp.status === 404) {
           
@@ -294,18 +270,16 @@ class CityList extends PureComponent {
         if (!this.state.searching) {
           this.searchAfterTimeout(() => {
             console.log('fetch something', getSerchUrlForCity(search, API_DEFAULT_UNITS))
-            if (this.state.data && 'list' in this.state.data) {
-              let findCityByExpression = '^('+search+').*$';
-              let city = this.state.data.list.filter(i => new RegExp(findCityByExpression, 'g').test(i.name));
-              if (city && Array.isArray(city) && city.length > 0) {
-                console.log("The city is present in data:",this.state.data.list,city);
-              } 
-              else {
-                console.log("The city to search is: ",search, city);
-                this.searchWeather(getSerchUrlForCity(search, API_DEFAULT_UNITS));
-              }
+            let findCityByExpression = '^('+search+').*$';
+            let city = this.props.cityList.list.filter(i => new RegExp(findCityByExpression, 'g').test(i.name));
+            if (city && Array.isArray(city) && city.length > 0) {
+              console.log("The city is present in data:",this.props.cityList.list,city);
+            } 
+            else {
+              console.log("The city to search is: ",search, city);
+              this.searchWeather(getSerchUrlForCity(search, API_DEFAULT_UNITS));
             }
-          });
+          },SEARCH_AFTER_PASSED_MS);
         } else console.log('trying to fetch something');
       }
     });
@@ -326,14 +300,19 @@ class CityList extends PureComponent {
 const bindAction = (dispatch) => {
   return {
     setCurrentWeather: weather => dispatch(setCurrentWeather(weather)),
+    setCityList: data => dispatch(setCityList(data)),
+    updateCityList: data => dispatch(updateCityList(data)),
+    setError: msg => dispatch(setError(msg)),
   };
 }
 
 const mapStateToProps = state => {
   return Object.assign({}, state, {
     online: getOnline(state),
+    timestamp: getTimestamp(state),
     currentWeather: getCurrentWeather(state),
     currentLocation: getCurrentLocation(state),
+    cityList: getCityList(state),
   });
 }
 

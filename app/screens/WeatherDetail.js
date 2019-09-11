@@ -5,7 +5,9 @@ import { useNavigation } from 'react-navigation-hooks';
 import { Icon } from 'react-native-elements';
 import Permissions from 'react-native-permissions';
 
-import {setCityList, setCurrentWeather, setLoading, setError} from '../redux/reducer';
+import AsyncStorage from "@react-native-community/async-storage";
+
+import {setCurrentWeather, setLoading, setError} from '../redux/reducer';
 
 import { 
   API_DEFAULT_UNITS, 
@@ -19,7 +21,6 @@ import {
 import { getOnline,
          getCurrentLocation, 
          getCurrentWeather,
-         getCityList,
          getTimestamp,
          getLoading} from '../redux/selectors';
 
@@ -35,7 +36,6 @@ const WeatherDetail = memo(({navigation}) => {
   const { navigate } = useNavigation();
   // redux
   const dispatch = useDispatch();
-  const cityList = useSelector(getCityList);
   const online = useSelector(getOnline);
   const timestamp = useSelector(getTimestamp);
   const currentLocation = useSelector(getCurrentLocation);
@@ -86,7 +86,7 @@ const WeatherDetail = memo(({navigation}) => {
         console.log("WeatherDetail:: weather data:", data)
         
         // return data
-        dispatch(setCurrentWeather({data:data}));
+        dispatch(setCurrentWeather({data:data, timestamp:new Date().getTime()}));
         dispatch(setLoading(false));
         // reset the navigation title
         if (data && 'name' in data) navigation.setParams({ title: data.name });
