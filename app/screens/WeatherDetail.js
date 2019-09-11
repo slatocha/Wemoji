@@ -7,7 +7,7 @@ import Permissions from 'react-native-permissions';
 
 import AsyncStorage from "@react-native-community/async-storage";
 
-import {setCurrentWeather, setLoading, setError} from '../redux/reducer';
+import {setCurrentWeather, setCurrentLocationWeather, setLoading, setError} from '../redux/reducer';
 
 import { 
   API_DEFAULT_UNITS, 
@@ -21,8 +21,10 @@ import {
 import { getOnline,
          getCurrentLocation, 
          getCurrentWeather,
+         getCurrentLocationWeather,
          getTimestamp,
-         getLoading} from '../redux/selectors';
+         getLoading,
+         getUseLocation} from '../redux/selectors';
 
 import { COLOR_ERROR_BG,
          COLOR_ERROR_TINT,
@@ -41,8 +43,15 @@ const WeatherDetail = memo(({navigation}) => {
   const online = useSelector(getOnline);
   const timestamp = useSelector(getTimestamp);
   const currentLocation = useSelector(getCurrentLocation);
+  const currentLocationWeather = useSelector(getCurrentLocationWeather);
   const currentWeather = useSelector(getCurrentWeather);
   const loading = useSelector(getLoading);
+  const useLocation = useSelector(getUseLocation);
+
+  // default
+  useEffect(() => {
+   dispatch(setLoading(false));
+  },[]);
 
   // basic share functionallity
   const onShare = async () => {
@@ -78,7 +87,7 @@ const WeatherDetail = memo(({navigation}) => {
 
   // weather effect
   useEffect(() => {
-    const getWeather = async (url) => {
+    const getWeather = async (url, loc) => {
       try {
         // console.log("the url: ", url)
         const resp = await fetch(url)
@@ -88,20 +97,24 @@ const WeatherDetail = memo(({navigation}) => {
         console.log("WeatherDetail:: weather data:", data)
         
         // return data
+        dispatch(setCurrentLocationWeather({data:data, timestamp:new Date().getTime()}));
         dispatch(setCurrentWeather({data:data, timestamp:new Date().getTime()}));
+
         dispatch(setLoading(false));
         // reset the navigation title
         if (data && 'name' in data) navigation.setParams({ title: data.name });
       } catch (err) {
         console.log('WeatherDetail:: weather error:',err)
+        dispatch(setLoading(false));
         dispatch(setError(ERROR_WEATHER_API));
       }
     }
-    // load data if the timestamp has a diff of min 10 minutes to now 
+    // load data if the timestamp has a diff of min 10 seconds to now 
     // or on forced refresh with refresh control
-    // if (timestamp == 0 && online) getWeather(URL_SEVERAL_INITIAL);
-    if (online) {
-      if (!loading && currentLocation.lat != 0 && currentLocation.lon != 0 && timestamp == 0) {
+    if (online && useLocation) {
+      if ( !loading && 
+           currentLocation.lat && currentLocation.lon && 
+           Math.abs(new Date().getTime() - timestamp) > (10 * 1 * 1000)) {
         dispatch(setLoading(true));
         getWeather(getSearchUrlByLatLon(currentLocation.lat,currentLocation.lon,API_DEFAULT_UNITS));
       }
@@ -122,6 +135,8 @@ const WeatherDetail = memo(({navigation}) => {
     navigation.setParams({ online:online, onDispatch:() => {dispatch(setError(ERROR_OFFLINE))} });
   },[online]);
 
+
+
   let renderWeather = () => {
     let loaded = currentWeather && Object.keys(currentWeather).length > 0 && 'name' in currentWeather && 'main' in currentWeather;
     return(
@@ -134,12 +149,28 @@ const WeatherDetail = memo(({navigation}) => {
               : null
     );
   }
+
+  let renderLocationWeather = () => {
+    let loaded = currentLocationWeather && Object.keys(currentLocationWeather).length > 0 && 'name' in currentLocationWeather && 'main' in currentLocationWeather;
+    return(
+      loaded  ? <View>
+                  <Text>City: {currentLocationWeather.name}</Text>
+                  <Text>Temperature: {currentLocationWeather.main.temp} {getTemperatureUnit(API_DEFAULT_UNITS)}</Text>
+                  <Text>Humidity: {currentLocationWeather.main.humidity} {getHumidityUnit()}</Text>
+                  <Text>Pressure: {currentLocationWeather.main.pressure} {getPressureUnit()}</Text>
+                  <Text>from current Loc</Text>
+                </View>
+              : null
+    );
+  }
+
+
   return (
     <SafeAreaView style={styles.safeAreaView}>
       <View style={[styles.body, online ? {} : styles.bodyError]}>
         <Text>Connection: {online ? "online" : "offline"}</Text>
         <Text>Location: {'lat:' + currentLocation.lat + '; lon:' + currentLocation.lon}</Text>
-        {renderWeather()}
+        {useLocation ? renderLocationWeather() : renderWeather()}
       </View>
     </SafeAreaView>
   );

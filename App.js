@@ -119,15 +119,15 @@ const useUserLocation = () => {
     const getCurrentPosition = async (options) =>  {
       Geolocation.getCurrentPosition(
           position => setLocation(position),
-          error => setError(ERROR_LOCATION),
+          error => setError(error),
           options
       );
     }
 
     const getUserLocation = async () => {
       let permission = await Permissions.check('location');
-      // permission states are: authorized || denied || restricted || undetermined
-      if (permission !== 'authorized') {
+      // // permission states are: authorized || denied || restricted || undetermined
+      if (permission === 'denied' || permission === 'restricted') {
         // unneded because the ErrorModal will handle the error view
         //  Alert.alert(
         //     ERROR_LOCATION_DISABLED.title,
@@ -142,6 +142,7 @@ const useUserLocation = () => {
         setAuthorization(permission);
         setError({title:ERROR_LOCATION_DISABLED.title, msg:ERROR_LOCATION_DISABLED.msg + ' Permission: ' + permission,additional:''});
       }
+
       return await getCurrentPosition(locationOptions);
     }
 
@@ -173,10 +174,13 @@ const Wrapper = memo(() => {
   // set an empty array to only use the effect on Mount
   // use severa useEffects to get different behaviours
 
+  // network handling
   useEffect(() => {
-    // network handling
     if (online != netInfo) dispatch(setOnline(netInfo));
-    // geolocation handling
+  },[online, netInfo]);
+
+  // geolocation handling
+  useEffect(() => {
     if (useLocation) {
       if (location) {
         if (location.disabled) dispatch(setUseLocation(false));
@@ -185,7 +189,10 @@ const Wrapper = memo(() => {
           // permission states are: authorized || denied || restricted || undetermined
           if (location.permission !== 'undetermined') dispatch(setUseLocation(false))
         }
-        else if (location.data && currentLocation.timestamp == 0) {
+        // fetch the location in 10 minutes margin if needed
+        else if ( location.data && 
+                  (!currentLocation.lon || !currentLocation.lat) && 
+                  Math.abs(currentLocation.timestamp - new Date().getTime()) > (10 * 1 * 1000) ) {
           dispatch(setCurrentLocation({lat:location.data.coords.latitude, lon:location.data.coords.longitude, timestamp:location.data.timestamp}))
         }
       }

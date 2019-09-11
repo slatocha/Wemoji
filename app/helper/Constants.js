@@ -35,6 +35,9 @@ export const getTemperatureUnit = units => {
 export const getHumidityUnit = () => { return '%'   }
 export const getPressureUnit = () => { return 'hPa' }
 
+// the API has data in 10 minutes margin so use 12 minutes just in case
+export const API_FETCH_DIFF_IN_MS = 12 * 60 * 1000;
+
 
 export const BASE_URL = 'http://api.openweathermap.org/data/2.5';
 

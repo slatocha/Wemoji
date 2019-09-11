@@ -6,6 +6,7 @@ export const getUseLocation = createSelector(state => state.useLocation, useLoca
 export const getCityList = createSelector(state => state.cityList, cityList => cityList);
 export const getSelectedCity = createSelector(state => state.selectedCity, selectedCity => selectedCity);
 export const getCurrentWeather = createSelector(state => state.currentWeather, currentWeather => currentWeather);
+export const getCurrentLocationWeather = createSelector(state => state.currentLocationWeather, currentLocationWeather => currentLocationWeather);
 export const getCurrentLocation = createSelector(state => state.currentLocation, currentLocation => currentLocation);
 export const getTimestamp = createSelector(state => state.timestamp, timestamp => timestamp);
 export const getLoading = createSelector(state => state.loading, loading => loading);

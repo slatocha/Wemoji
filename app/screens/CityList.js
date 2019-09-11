@@ -21,22 +21,25 @@ import {
 
 import { connect } from 'react-redux';
 
-import { APP_NAME, API_DEFAULT_UNITS, getTemperatureUnit, URL_SEVERAL_INITIAL, getIconUrlForIcon, getSerchUrlForCity } from '../helper/Constants';
+import { APP_NAME, APP_VERSION, API_DEFAULT_UNITS, getTemperatureUnit, URL_SEVERAL_INITIAL, getIconUrlForIcon, getSerchUrlForCity, API_FETCH_DIFF_IN_MS } from '../helper/Constants';
 
 import { getOnline,
+         getUseLocation,
          getCurrentLocation, 
          getCurrentWeather,
          getCityList,
-         getTimestamp } from '../redux/selectors';
+         getTimestamp,
+         getCurrentLocationWeather } from '../redux/selectors';
 
-import {setCurrentWeather, setCityList, updateCityList, setError} from '../redux/reducer';
+import {setCurrentWeather, setCurrentLocationWeather, setCityList, updateCityList, setError, setUseLocation} from '../redux/reducer';
 
 import { COLOR_ERROR_BG,
          COLOR_ERROR_TINT,
          COLOR_BG,
          COLOR_TINT,
          COLOR_ICON,
-         COLOR_ICON_ERROR } from '../helper/Colors';
+         COLOR_ICON_ERROR,
+         COLOR_WHITE } from '../helper/Colors';
 
 import { ERROR_OFFLINE, ERROR_WEATHER_API, ERROR_CITY_SEARCH, ERROR_CITY_NOT_FOUND } from '../helper/Error';
 
@@ -110,6 +113,7 @@ class CityList extends PureComponent {
       search: '',
       searching: false,
       online: props.online,
+      scrollable: true,
     }
     this.searchTimer;
   }
@@ -125,9 +129,15 @@ class CityList extends PureComponent {
     this.props.navigation.navigate('Home');
   }
 
+  handleDetailCurrentLocation(item) {
+    // console.log("CityList::handleDetailCurrentLocation",item);
+    this.props.setCurrentLocationWeather({data:item, timestamp:new Date().getTime()});
+    this.props.navigation.navigate('Home');
+  }
+
   static getDerivedStateFromProps(nextProps, prevState) {
     // update the online param in navigation to indicate offline state
-    if (prevState.online !== nextProps.online || nextProps.navigation.getParam('online') !== nextProps.online) nextProps.navigation.setParams({ online:nextProps.online, onDispatch:() => {this.props.setError(ERROR_OFFLINE)} });
+    if (prevState.online !== nextProps.online || nextProps.navigation.getParam('online') !== nextProps.online) nextProps.navigation.setParams({ online:nextProps.online, onDispatch:() => {nextProps.setError(ERROR_OFFLINE)} });
     return nextProps.online === prevState.online ? {}
                                                  : {online:nextProps.online};
   }
@@ -142,8 +152,8 @@ class CityList extends PureComponent {
     // set the initial online state
     this.props.navigation.setParams({ online:online });
 
-    // get the weather initially, but only if the timestamp was never set or is older than needed
-    if (cityList.timestamp == 0 && online) this.getWeather(URL_SEVERAL_INITIAL);
+    // get the weather initially, but also if the api has newer Weather to show
+    if ((cityList.timestamp == 0 || Math.abs(cityList.timestamp - new Date().getTime()) > API_FETCH_DIFF_IN_MS) && online) this.getWeather(URL_SEVERAL_INITIAL);
   }
 
   keyExtractor = (item, index) => index.toString();
@@ -163,28 +173,64 @@ class CityList extends PureComponent {
   )
 
   render() {
-    let { search } = this.state;
+    let { search, scrollable } = this.state;
     let { cityList: { list },
-          online } = this.props;
+          online,
+          useLocation,
+          currentLocationWeather } = this.props;
 
     return (
       <Fragment>
         {/* <StatusBar barStyle="dark-content" /> */}
         <SafeAreaView style={styles.safeAreaView}>
             <View style={[styles.body, online ? {} : styles.bodyError]}>
+              <SearchBar
+                placeholder="City..."
+                onChangeText={this.updateSearch}
+                showLoading={search != ''}
+                value={search}
+              />
+              <ListItem
+                title={'Current Location'}
+                // subtitle={"Temperature: " + item.main.temp.toString() + ' ' + getTemperatureUnit(API_DEFAULT_UNITS)}
+                // leftAvatar={{
+                //   source: item.weather && Array.isArray(item.weather) && item.weather.length > 0 && { uri: getIconUrlForIcon(item.weather[0].icon) },
+                //   title: 'current location'
+                // }}
+                onPress={() => {}}
+                bottomDivider
+                switch={{onValueChange:val => {console.log("change",val), this.props.setUseLocation(val); if (!val) this.props.setCurrentLocationWeather({data:{}, timestamp:0});}, value:useLocation}}
+              />
               {(list.length > 0) ? <FlatList 
                                     ListHeaderComponent={
-                                      <SearchBar
-                                      placeholder="City..."
-                                      onChangeText={this.updateSearch}
-                                      showLoading={search != ''}
-                                      value={search}
-                                    />
+                                      currentLocationWeather && Object.keys(currentLocationWeather).length > 0 ? <ListItem
+                                                                                                                    title={currentLocationWeather.name}
+                                                                                                                    subtitle={
+                                                                                                                      
+                                                                                                                      <View style={styles.subtitleView}>
+                                                                                                                        <Icon name='location-arrow' type='font-awesome' color={COLOR_ICON} size={20}/>
+                                                                                                                        <Text style={styles.subtitleText}>{"Temperature: " + currentLocationWeather.main.temp.toString() + ' ' + getTemperatureUnit(API_DEFAULT_UNITS)}</Text>
+                                                                                                                      </View>
+                                                                                                                    }
+                                                                                                                    leftAvatar={{
+                                                                                                                      source: currentLocationWeather.weather && Array.isArray(currentLocationWeather.weather) && currentLocationWeather.weather.length > 0 && { uri: getIconUrlForIcon(currentLocationWeather.weather[0].icon) },
+                                                                                                                      title: 'current location'
+                                                                                                                    }}
+                                                                                                                    onPress={() => this.handleDetail(currentLocationWeather)}
+                                                                                                                    bottomDivider 
+                                                                                                                    chevron />
+                                                                                                                : null
+                                    }
+                                    ListFooterComponent={
+                                      <View style={[styles.body, online ? {} : styles.bodyError]}>
+                                        <Text style={styles.footerText}>{APP_NAME + ' - v: ' + APP_VERSION}</Text>
+                                      </View>
                                     }
                                     keyExtractor = {this.keyExtractor}
                                     data={list} 
-                                    renderItem={this.renderItem} /> 
-                                  : <ActivityIndicator size="large" color="#0000ff" />}
+                                    renderItem={this.renderItem}
+                                    scrollEnabled={scrollable} /> 
+                                  : <ActivityIndicator size="large" color={online ? COLOR_TINT : COLOR_ERROR_TINT} />}
             </View>
         </SafeAreaView>
       </Fragment>
@@ -286,9 +332,11 @@ class CityList extends PureComponent {
 const bindAction = (dispatch) => {
   return {
     setCurrentWeather: weather => dispatch(setCurrentWeather(weather)),
+    setCurrentLocationWeather: weather => dispatch(setCurrentLocationWeather(weather)),
     setCityList: data => dispatch(setCityList(data)),
     updateCityList: data => dispatch(updateCityList(data)),
     setError: err => dispatch(setError(err)),
+    setUseLocation: use => dispatch(setUseLocation(use)),
   };
 }
 
@@ -297,8 +345,10 @@ const mapStateToProps = state => {
     online: getOnline(state),
     timestamp: getTimestamp(state),
     currentWeather: getCurrentWeather(state),
+    currentLocationWeather: getCurrentLocationWeather(state),
     currentLocation: getCurrentLocation(state),
     cityList: getCityList(state),
+    useLocation: getUseLocation(state),
   });
 }
 
@@ -334,30 +384,19 @@ const styles = StyleSheet.create({
     color:COLOR_ERROR_TINT,
     backgroundColor: COLOR_ERROR_BG,
   },
-  sectionContainer: {
-    marginTop: 24,
+  subtitleView: {
+    flexDirection: 'row',
+  },
+  subtitleText: {
+    paddingLeft: 5,
+    fontSize:15
+  },
+  footerText: {
+    color:"#bdbdbd",
+    fontSize: 15,
+    fontWeight: '600',
+    textAlign: 'center',
+    paddingTop:20,
     paddingHorizontal: 24,
-  },
-  sectionTitle: {
-    fontSize: 24,
-    fontWeight: '600',
-    color: Colors.black,
-  },
-  sectionDescription: {
-    marginTop: 8,
-    fontSize: 18,
-    fontWeight: '400',
-    color: Colors.dark,
-  },
-  highlight: {
-    fontWeight: '700',
-  },
-  footer: {
-    color: Colors.dark,
-    fontSize: 12,
-    fontWeight: '600',
-    padding: 4,
-    paddingRight: 12,
-    textAlign: 'right',
   },
 });
