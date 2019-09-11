@@ -160,6 +160,7 @@ class CityList extends PureComponent {
 
   renderItem = ({ item }) => (
     <ListItem
+      containerStyle={styles.listItem}
       title={item.name}
       subtitle={"Temperature: " + item.main.temp.toString() + ' ' + getTemperatureUnit(API_DEFAULT_UNITS)}
       leftAvatar={{
@@ -191,12 +192,8 @@ class CityList extends PureComponent {
                 value={search}
               />
               <ListItem
+                containerStyle={styles.listItem}
                 title={'Current Location'}
-                // subtitle={"Temperature: " + item.main.temp.toString() + ' ' + getTemperatureUnit(API_DEFAULT_UNITS)}
-                // leftAvatar={{
-                //   source: item.weather && Array.isArray(item.weather) && item.weather.length > 0 && { uri: getIconUrlForIcon(item.weather[0].icon) },
-                //   title: 'current location'
-                // }}
                 onPress={() => {}}
                 bottomDivider
                 switch={{onValueChange:val => {console.log("change",val), this.props.setUseLocation(val); if (!val) this.props.setCurrentLocationWeather({data:{}, timestamp:0});}, value:useLocation}}
@@ -204,9 +201,9 @@ class CityList extends PureComponent {
               {(list.length > 0) ? <FlatList 
                                     ListHeaderComponent={
                                       currentLocationWeather && Object.keys(currentLocationWeather).length > 0 ? <ListItem
+                                                                                                                    containerStyle={styles.listItem}
                                                                                                                     title={currentLocationWeather.name}
                                                                                                                     subtitle={
-                                                                                                                      
                                                                                                                       <View style={styles.subtitleView}>
                                                                                                                         <Icon name='location-arrow' type='font-awesome' color={COLOR_ICON} size={20}/>
                                                                                                                         <Text style={styles.subtitleText}>{"Temperature: " + currentLocationWeather.main.temp.toString() + ' ' + getTemperatureUnit(API_DEFAULT_UNITS)}</Text>
@@ -383,6 +380,9 @@ const styles = StyleSheet.create({
   bodyError: {
     color:COLOR_ERROR_TINT,
     backgroundColor: COLOR_ERROR_BG,
+  },
+  listItem: {
+    backgroundColor:COLOR_BG,
   },
   subtitleView: {
     flexDirection: 'row',
