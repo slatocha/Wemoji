@@ -8,7 +8,7 @@ export const SET_CURRENT_LOCATION = 'SET_CURRENT_LOCATION';
 export const SET_LOADING = 'SET_LOADING';
 export const SET_ERROR = 'SET_ERROR';
 
-const initialState = { online:true, useLocation:true, cityList: { list:[], cnt:0, timestamp:0 }, selectedCity: {}, currentWeather: {}, currentLocation:{ lat: 0, lon: 0, timestamp:0 }, timestamp: 0, loading: false, error: '' };
+const initialState = { online:true, useLocation:true, cityList: { list:[], cnt:0, timestamp:0 }, selectedCity: {}, currentWeather: {}, currentLocation:{ lat: 0, lon: 0, timestamp:0 }, timestamp: 0, loading: false, error:{title:'', msg:'', additional:'', show:false} };
 
 export default function reducer(state = initialState, action) {
   switch (action.type) {
@@ -45,8 +45,13 @@ export default function reducer(state = initialState, action) {
     }
     case SET_LOADING:
       return { ...state, loading: action.payload };
-    case SET_ERROR:
-      return { ...state, error: action.payload };
+    case SET_ERROR: {
+      let _title = ('title' in action.payload) ? action.payload.title : '';
+      let _msg = ('msg' in action.payload) ? action.payload.msg : '';
+      let _additional = ('additional' in action.payload) ? action.payload.additional : '';
+      let _show = action.payload && Object.keys(action.payload).length > 0
+      return { ...state, error:{title:_title, msg:_msg, additional:_additional, show:_show } };
+    }
     default:
       return state;
   }
