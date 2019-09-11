@@ -216,7 +216,7 @@ class CityList extends PureComponent {
                                                                                                                       source: currentLocationWeather.weather && Array.isArray(currentLocationWeather.weather) && currentLocationWeather.weather.length > 0 && { uri: getIconUrlForIcon(currentLocationWeather.weather[0].icon) },
                                                                                                                       title: 'current location'
                                                                                                                     }}
-                                                                                                                    onPress={() => this.handleDetail(currentLocationWeather)}
+                                                                                                                    onPress={() => this.handleDetailCurrentLocation(currentLocationWeather)}
                                                                                                                     bottomDivider 
                                                                                                                     chevron />
                                                                                                                 : null
