@@ -1,5 +1,5 @@
 import React, { memo, useState, useEffect } from 'react';
-import { StyleSheet, View, Text, Alert, Easing, Animated } from 'react-native';
+import { StyleSheet, View, Text, Easing, Animated } from 'react-native';
 
 import { Provider, useSelector, useDispatch } from 'react-redux';
 import { PersistGate } from 'redux-persist/integration/react';
@@ -22,6 +22,10 @@ import WeatherDetail from './app/screens/WeatherDetail';
 import {URL_SEVERAL_INITIAL} from './app/helper/Constants';
 
 import { getCurrentLocation, getUseLocation, getOnline } from './app/redux/selectors';
+
+import { ERROR_LOCATION, ERROR_LOCATION_DISABLED } from './app/helper/Error';
+
+import ErrorModal from './app/custom/ErrorModal';
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////
@@ -107,32 +111,36 @@ const useUserLocation = () => {
   const [location, setLocation] = useState(false);
   const [error, setError] = useState(false);
   const [disabled, setDisabled] = useState(false);
-  const useLocation = useSelector(getUseLocation)
+  const useLocation = useSelector(getUseLocation);
+  const [authorization, setAuthorization] = useState('');
   const locationOptions = Platform.OS === 'android' ? null : { enableHighAccuracy: true, timeout: 100000, maximumAge: 1000 };
 
   useEffect(() => {
     const getCurrentPosition = async (options) =>  {
       Geolocation.getCurrentPosition(
           position => setLocation(position),
-          error => setError(error),
+          error => setError(ERROR_LOCATION),
           options
       );
     }
 
     const getUserLocation = async () => {
       let permission = await Permissions.check('location');
+      // permission states are: authorized || denied || restricted || undetermined
       if (permission !== 'authorized') {
-         Alert.alert(
-            'Location Disabled',
-            'If you want to use your location than please enable it, otherwise cancel and choose an available location.',
-            [ 
-              {text: 'Go to settings', onPress: () => Permissions.openSettings()},
-              {text: 'Cancel', onPress: () => setDisabled(true),style: 'cancel'},
-            ],
-            {cancelable: false}
-        );
-        setError({message:'Permission: '+permission});
-          // throw new Error('Not authorized: ' + permission);
+        // unneded because the ErrorModal will handle the error view
+        //  Alert.alert(
+        //     ERROR_LOCATION_DISABLED.title,
+        //     ERROR_LOCATION_DISABLED.msg + ' Permission: ' + permission,
+        //     [ 
+        //       {text: 'Go to settings', onPress: () => Permissions.openSettings()},
+        //       {text: 'Cancel', onPress: () => setDisabled(true),style: 'cancel'},
+        //     ],
+        //     {cancelable: false}
+        // );
+        // throw new Error('Not authorized: ' + permission);
+        setAuthorization(permission);
+        setError({title:ERROR_LOCATION_DISABLED.title, msg:ERROR_LOCATION_DISABLED.msg + ' Permission: ' + permission,additional:''});
       }
       return await getCurrentPosition(locationOptions);
     }
@@ -144,7 +152,7 @@ const useUserLocation = () => {
     }
   }, [])
   
-  return {error:error, data:location, hasError:(error) ? true : false, disabled:disabled};
+  return {error:error, data:location, hasError:(error) ? true : false, disabled:disabled, permission:authorization};
 }
 ///////////////////////////////////////////////////////////////////////////////////////////
 
@@ -177,7 +185,11 @@ const Wrapper = memo(() => {
     if (useLocation) {
       if (location) {
         if (location.disabled) dispatch(setUseLocation(false));
-        else if (location.hasError) dispatch(setError(location.error.message))
+        else if (location.hasError) {
+          dispatch(setError(location.error))
+          // permission states are: authorized || denied || restricted || undetermined
+          if (location.permission !== 'undetermined') dispatch(setUseLocation(false))
+        }
         else if (location.data && currentLocation.timestamp == 0) {
           dispatch(setCurrentLocation({lat:location.data.coords.latitude, lon:location.data.coords.longitude, timestamp:location.data.timestamp}))
         }
@@ -188,6 +200,7 @@ const Wrapper = memo(() => {
   return(
     <View style={styles.container}>
       <AppContainer/>
+      <ErrorModal />
     </View>
   );
 })

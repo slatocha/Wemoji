@@ -1,5 +1,5 @@
 import React, { memo, useState, useEffect } from 'react';
-import { SafeAreaView, StyleSheet, View, Text, Button, Share, TouchableOpacity, Alert } from 'react-native';
+import { SafeAreaView, StyleSheet, View, Text, Button, Share, TouchableOpacity } from 'react-native';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigation } from 'react-navigation-hooks';
 import { Icon } from 'react-native-elements';
@@ -30,6 +30,8 @@ import { COLOR_ERROR_BG,
          COLOR_TINT,
          COLOR_ICON,
          COLOR_ICON_ERROR } from '../helper/Colors';
+
+import { ERROR_OFFLINE, ERROR_WEATHER_API, ERROR_SHARE } from '../helper/Error';
 
 const WeatherDetail = memo(({navigation}) => {
   // be careful to never call useNavigation in the press callback. Call hooks directly from the render function!
@@ -65,7 +67,7 @@ const WeatherDetail = memo(({navigation}) => {
         console.log('WeatherDetail::onShare - dismissed');
       }
     } catch (error) {
-      dispatch(setError(error.message));
+      dispatch(setError(ERROR_SHARE));
     }
   };
   
@@ -92,6 +94,7 @@ const WeatherDetail = memo(({navigation}) => {
         if (data && 'name' in data) navigation.setParams({ title: data.name });
       } catch (err) {
         console.log('WeatherDetail:: weather error:',err)
+        dispatch(setError(ERROR_WEATHER_API));
       }
     }
     // load data if the timestamp has a diff of min 10 minutes to now 
@@ -116,7 +119,7 @@ const WeatherDetail = memo(({navigation}) => {
   // online change effect
   useEffect(() => {
     // reset the navigation title
-    navigation.setParams({ online:online });
+    navigation.setParams({ online:online, onDispatch:() => {dispatch(setError(ERROR_OFFLINE))} });
   },[online]);
 
   let renderWeather = () => {
@@ -153,23 +156,10 @@ WeatherDetail.navigationOptions = ({ navigation }) => ({
   ),
   headerRight: (
     navigation.getParam('online', true) ? <TouchableOpacity onPress={navigation.getParam('onShare', () => {})}>
-                                            <Icon /* raised*/ name='share' type='font-awesome' color={navigation.getParam('online', true) ? COLOR_ICON : COLOR_ICON_ERROR} />
+                                            <Icon name='share' type='font-awesome' color={navigation.getParam('online', true) ? COLOR_ICON : COLOR_ICON_ERROR} />
                                           </TouchableOpacity>
-                                        : <TouchableOpacity 
-                                            onPress={() => { Alert.alert(
-                                                                'Offline',
-                                                                APP_NAME + ' is offline, please check your internet connection.',
-                                                                [ 
-                                                                  // {text: 'Go to settings', onPress: () => Permissions.openSettings()},
-                                                                  {text: 'Ok', onPress: () => {} ,style: 'cancel'},
-                                                                ],
-                                                                {cancelable: false}
-                                                            )}}>
-                                            <Icon 
-                                              name='exclamation-triangle' 
-                                              type='font-awesome' 
-                                              color={navigation.getParam('online', true) ? COLOR_ICON : COLOR_ICON_ERROR} 
-                                              />
+                                        : <TouchableOpacity onPress={navigation.getParam('onDispatch', () => {})}>
+                                            <Icon name='exclamation-triangle' type='font-awesome' color={navigation.getParam('online', true) ? COLOR_ICON : COLOR_ICON_ERROR} />
                                          </TouchableOpacity>
     // <Button onPress={navigation.getParam('onShare', () => {})} title="Share" />
     // <Icon /* raised*/ name='share' type='font-awesome' /*color='#f50'*/ onPress={navigation.getParam('onShare', () => {})} />

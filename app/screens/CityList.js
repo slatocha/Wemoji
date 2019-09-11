@@ -7,7 +7,6 @@ import {
   // StatusBar,
   FlatList,
   ActivityIndicator,
-  Alert,
   TouchableOpacity
 } from 'react-native';
 
@@ -38,6 +37,8 @@ import { COLOR_ERROR_BG,
          COLOR_TINT,
          COLOR_ICON,
          COLOR_ICON_ERROR } from '../helper/Colors';
+
+import { ERROR_OFFLINE, ERROR_WEATHER_API, ERROR_CITY_SEARCH, ERROR_CITY_NOT_FOUND } from '../helper/Error';
 
 const SEARCH_AFTER_PASSED_MS = 2000;
 
@@ -126,7 +127,7 @@ class CityList extends PureComponent {
 
   static getDerivedStateFromProps(nextProps, prevState) {
     // update the online param in navigation to indicate offline state
-    if (prevState.online !== nextProps.online || nextProps.navigation.getParam('online') !== nextProps.online) nextProps.navigation.setParams({ online:nextProps.online });
+    if (prevState.online !== nextProps.online || nextProps.navigation.getParam('online') !== nextProps.online) nextProps.navigation.setParams({ online:nextProps.online, onDispatch:() => {this.props.setError(ERROR_OFFLINE)} });
     return nextProps.online === prevState.online ? {}
                                                  : {online:nextProps.online};
   }
@@ -162,7 +163,7 @@ class CityList extends PureComponent {
   )
 
   render() {
-    let {search, errorMsg} = this.state;
+    let { search } = this.state;
     let { cityList: { list },
           online } = this.props;
 
@@ -211,6 +212,7 @@ class CityList extends PureComponent {
       this.setState({searching:false, search:''});
     } catch (err) {
       console.log('the error:',err)
+      this.props.setError(ERROR_WEATHER_API);
     }
   }
 
@@ -232,39 +234,23 @@ class CityList extends PureComponent {
           this.setState({searching:false, search:''});
         }
         else if (resp.status === 404) {
-          
-          Alert.alert(
-            'Error',
-            ('message' in data && data.message) ? data.message : '',
-            [
-              {text: 'OK', onPress: () => {
-                this.setState({searching:false, search:''});
-              }},
-            ],
-            {cancelable: false},
-          );
+          this.setState({searching:false, search:''});
+          this.props.setError(ERROR_CITY_NOT_FOUND);
         } 
         else {
-          Alert.alert(
-            'Error',
-            ('message' in data && data.message) ? data.message : '',
-            [
-              {text: 'OK', onPress: () => {
-                this.setState({searching:false, search:''});
-              }},
-            ],
-            {cancelable: false},
-          );
+          this.setState({searching:false, search:''});
+          this.props.setError(ERROR_CITY_SEARCH);
         }
       }
     } catch (err) {
       console.log('searchWeather - the error:',err)
+      this.props.setError(ERROR_CITY_SEARCH);
     }
   }
 
   updateSearch = search => {
     this.setState({ search }, () => {
-      console.log('this.state.search:',this.state.search);
+      // console.log('this.state.search:',this.state.search);
       if ((typeof search === 'string' || search instanceof String) && search.length > 3) {
         // if not serching {}
         if (!this.state.searching) {
@@ -302,7 +288,7 @@ const bindAction = (dispatch) => {
     setCurrentWeather: weather => dispatch(setCurrentWeather(weather)),
     setCityList: data => dispatch(setCityList(data)),
     updateCityList: data => dispatch(updateCityList(data)),
-    setError: msg => dispatch(setError(msg)),
+    setError: err => dispatch(setError(err)),
   };
 }
 
@@ -319,22 +305,9 @@ const mapStateToProps = state => {
 CityList.navigationOptions = ({ navigation }) => ({
   headerRight: (
     navigation.getParam('online', true) ? null
-                                        : <TouchableOpacity 
-                                            onPress={() => { Alert.alert(
-                                                                'Offline',
-                                                                APP_NAME + ' is offline, please check your internet connection.',
-                                                                [ 
-                                                                  // {text: 'Go to settings', onPress: () => Permissions.openSettings()},
-                                                                  {text: 'Ok', onPress: () => {} ,style: 'cancel'},
-                                                                ],
-                                                                {cancelable: false}
-                                                            )}}>
-                                            <Icon 
-                                              name='exclamation-triangle' 
-                                              type='font-awesome' 
-                                              color={navigation.getParam('online', true) ? COLOR_ICON : COLOR_ICON_ERROR} 
-                                              />
-                                         </TouchableOpacity>
+                                        : <TouchableOpacity onPress={navigation.getParam('onDispatch', () => {})}>
+                                            <Icon name='exclamation-triangle' type='font-awesome' color={navigation.getParam('online', true) ? COLOR_ICON : COLOR_ICON_ERROR} />
+                                          </TouchableOpacity>
   ),
   headerTintColor: navigation.getParam('online', true) ? COLOR_TINT : COLOR_ERROR_TINT,
   headerStyle:{

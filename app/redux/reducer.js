@@ -105,14 +105,14 @@ export function setCurrentLocation(data:object) {
   };
 }
 
-export function setLoading(data:ool) {
+export function setLoading(data:bool) {
   return {
     type: SET_LOADING,
     payload: data,
   };
 }
 
-export function setError(data:string) {
+export function setError(data:object) {
   return {
     type: SET_ERROR,
     payload: data,
