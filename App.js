@@ -173,11 +173,6 @@ const Wrapper = memo(() => {
   // set an empty array to only use the effect on Mount
   // use severa useEffects to get different behaviours
 
-  // fire SplashScreen hide only once on component did mount
-  useEffect(() => {
-    SplashScreen.hide();
-  },[]);
-
   useEffect(() => {
     // network handling
     if (online != netInfo) dispatch(setOnline(netInfo));
@@ -208,6 +203,11 @@ const Wrapper = memo(() => {
 
 // Main App functional component
 const App = () => {
+  // fire SplashScreen hide only once on component did mount
+  useEffect(() => {
+    SplashScreen.hide();
+  },[]);
+
   return (
     <Provider store={store}>
       <PersistGate loading={null} persistor={persistor}>
